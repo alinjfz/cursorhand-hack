@@ -116,6 +116,42 @@ program
   });
 
 program
+  .command("payday")
+  .description("Poll WhatsApp for YES and send PayPal (sandbox /connect agents)")
+  .option("--phone <phone>", "Phone to watch (default: DEMO_PHONE)")
+  .option("--agent <id>", "Wassist agent ID", "b8f4eda9-6bbe-43fc-870e-fa43ac19d4af")
+  .option("--timeout <seconds>", "How long to wait for YES", "120")
+  .action(async (opts) => {
+    const { optionalEnv } = await import("./lib/env.js");
+    const { getLeadByPhone, updateLead } = await import("./lib/supabase.js");
+    const { createCheckoutOrder } = await import("./lib/paypal.js");
+    const { sendPaymentMessage } = await import("./lib/wassist.js");
+    const { waitForInboundYes } = await import("./lib/wassist-inbox.js");
+
+    const phone = opts.phone ?? optionalEnv("DEMO_PHONE");
+    if (!phone) throw new Error("Set DEMO_PHONE or pass --phone");
+
+    console.log(`Watching for YES from ${phone} (agent ${opts.agent})...`);
+    await waitForInboundYes(opts.agent, phone, {
+      timeoutMs: parseInt(opts.timeout, 10) * 1000,
+    });
+
+    const lead = await getLeadByPhone(phone);
+    if (!lead) throw new Error(`No lead for ${phone}`);
+
+    await updateLead(lead.id, { status: "INTERESTED" });
+    const { orderId, checkoutUrl } = await createCheckoutOrder(lead.name);
+    await updateLead(lead.id, {
+      status: "INVOICED",
+      paypal_order_id: orderId,
+      paypal_checkout_url: checkoutUrl,
+    });
+    await sendPaymentMessage(phone, checkoutUrl);
+    console.log(`✓ PayPal link sent: ${checkoutUrl}`);
+  });
+
+program
+  .command("capture")
   .description("Manually mark a lead as PAID or capture PayPal order")
   .option("--lead-id <id>", "Lead UUID to mark PAID")
   .option("--capture <orderId>", "Capture PayPal order and mark lead PAID")

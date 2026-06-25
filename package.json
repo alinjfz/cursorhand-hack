@@ -17,7 +17,12 @@
     "send:demo": "tsx scripts/send-demo-message.ts",
     "send:fix": "tsx scripts/send-correction.ts",
     "wassist:byoa": "tsx scripts/setup-byoa.ts",
+    "wassist:configure": "tsx scripts/configure-connected-agent.ts",
+    "process:yes": "tsx scripts/process-yes-now.ts",
+    "send:paypal": "tsx scripts/send-paypal-now.ts",
     "vercel:env": "tsx scripts/push-vercel-env.ts",
+    "vercel:deploy": "tsx scripts/deploy.ts",
+    "reset:demo": "tsx scripts/reset-demo-lead.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

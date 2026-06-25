@@ -14,13 +14,13 @@ async function main(): Promise<void> {
   const token = optionalEnv("VERCEL_TOKEN");
   if (!token) throw new Error("VERCEL_TOKEN missing");
 
-  execSync(`npx vercel link --yes --token ${JSON.stringify(token)}`, {
-    cwd: ROOT,
-    stdio: "inherit",
-  });
+  execSync(
+    `npx vercel link --yes --token ${JSON.stringify(token)} --scope alij-s-projects`,
+    { cwd: ROOT, stdio: "inherit" },
+  );
 
   const output = execSync(
-    `npx vercel deploy --prod --yes --token ${JSON.stringify(token)}`,
+    `npx vercel deploy --prod --yes --token ${JSON.stringify(token)} --scope alij-s-projects`,
     { cwd: ROOT, encoding: "utf8" },
   );
 

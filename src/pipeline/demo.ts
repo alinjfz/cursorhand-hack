@@ -23,6 +23,7 @@ export async function runDemo(): Promise<void> {
   await runApproach({ limit: 3 });
 
   console.log("\n═══ Demo run complete ═══");
-  console.log("Check WhatsApp. Reply YES to trigger PayPal checkout.");
+  console.log("Check WhatsApp. Reply YES, then run: npm run payday");
+  console.log("  (Sandbox /connect agents don't hit the webhook automatically.)");
   console.log(`Dashboard: ${optionalEnv("WEBHOOK_BASE_URL") ?? "http://localhost"}/#dashboard`);
 }
