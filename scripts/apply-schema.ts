@@ -84,10 +84,16 @@ async function applyViaPostgres(sql: string): Promise<boolean> {
   return false;
 }
 
-async function applyViaManagementApi(sql: string): Promise<boolean> {
-  const token =
+function getAccessToken(): string | undefined {
+  return (
+    optionalEnv("SUPABASE_TOKEN") ??
     optionalEnv("SUPABASE_ACCESS_TOKEN") ??
-    optionalEnv("SUPABASE_PERSONAL_ACCESS_TOKEN");
+    optionalEnv("SUPABASE_PERSONAL_ACCESS_TOKEN")
+  );
+}
+
+async function applyViaManagementApi(sql: string): Promise<boolean> {
+  const token = getAccessToken();
   if (!token) return false;
 
   const ref = projectRef();
@@ -113,9 +119,7 @@ async function applyViaManagementApi(sql: string): Promise<boolean> {
 }
 
 function applyViaSupabaseCli(): boolean {
-  const token =
-    optionalEnv("SUPABASE_ACCESS_TOKEN") ??
-    optionalEnv("SUPABASE_PERSONAL_ACCESS_TOKEN");
+  const token = getAccessToken();
   if (!token) return false;
 
   console.log("Trying Supabase CLI (db query --linked)...");
@@ -144,9 +148,18 @@ function applyViaSupabaseCli(): boolean {
 async function main(): Promise<void> {
   const sql = readFileSync(SCHEMA, "utf-8");
 
-  if (applyViaSupabaseCli()) {
-    console.log("Schema applied successfully (Supabase CLI).");
+  if (await applyViaManagementApi(sql)) {
+    console.log("Schema applied successfully (Management API).");
     return;
+  }
+
+  try {
+    if (applyViaSupabaseCli()) {
+      console.log("Schema applied successfully (Supabase CLI).");
+      return;
+    }
+  } catch (err) {
+    console.log("CLI fallback failed:", err instanceof Error ? err.message : err);
   }
 
   if (await applyViaPostgres(sql)) {
@@ -154,15 +167,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (await applyViaManagementApi(sql)) {
-    console.log("Schema applied successfully (Management API).");
-    return;
-  }
-
   throw new Error(
     "Could not apply schema. Add one of:\n" +
       "  SUPABASE_DB_PASSWORD or DATABASE_URL (Supabase → Settings → Database)\n" +
-      "  SUPABASE_ACCESS_TOKEN (supabase.com/dashboard/account/tokens)",
+      "  SUPABASE_TOKEN or SUPABASE_ACCESS_TOKEN (supabase.com/dashboard/account/tokens)",
   );
 }
 

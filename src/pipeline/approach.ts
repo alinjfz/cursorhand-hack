@@ -1,4 +1,5 @@
-import { getLeadsByStatus, updateLead } from "../lib/supabase.js";
+import { getLeadsByStatusDemoFirst } from "../lib/demo.js";
+import { updateLead } from "../lib/supabase.js";
 import { sendOutreachMessage } from "../lib/wassist.js";
 
 export interface ApproachOptions {
@@ -8,7 +9,7 @@ export interface ApproachOptions {
 export async function runApproach(options: ApproachOptions = {}): Promise<void> {
   const { limit = 3 } = options;
 
-  const leads = await getLeadsByStatus("SITE_READY", limit);
+  const leads = await getLeadsByStatusDemoFirst("SITE_READY", limit);
   if (leads.length === 0) {
     console.log("No SITE_READY leads to approach. Run build first.");
     return;

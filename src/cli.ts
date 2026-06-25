@@ -4,6 +4,7 @@ import "./lib/env.js";
 import { runHunt } from "./pipeline/hunt.js";
 import { runBuild } from "./pipeline/build.js";
 import { runApproach } from "./pipeline/approach.js";
+import { runDemo } from "./pipeline/demo.js";
 import { getLeadsByStatus, updateLead } from "./lib/supabase.js";
 import { captureOrder } from "./lib/paypal.js";
 import { describeConfiguredProviders, getBuildProvider, getLlmProvider, getWassistMode, hasWassistOutboundTemplates } from "./lib/config.js";
@@ -55,14 +56,14 @@ program
   .option("--skip-deploy", "Generate HTML only, skip deploy")
   .option(
     "-p, --provider <provider>",
-    "manus | llm-vercel | auto (default: auto)",
+    "manus | llm-vercel | static | auto (default: auto)",
     "auto",
   )
   .action(async (opts) => {
     await runBuild({
       limit: parseInt(opts.limit, 10),
       skipDeploy: opts.skipDeploy,
-      provider: opts.provider as "manus" | "llm-vercel" | "auto",
+      provider: opts.provider as "manus" | "llm-vercel" | "static" | "auto",
     });
   });
 
@@ -108,7 +109,13 @@ program
   });
 
 program
-  .command("payday")
+  .command("demo")
+  .description("Live proof: build site for DEMO_PHONE + WhatsApp outreach (you first)")
+  .action(async () => {
+    await runDemo();
+  });
+
+program
   .description("Manually mark a lead as PAID or capture PayPal order")
   .option("--lead-id <id>", "Lead UUID to mark PAID")
   .option("--capture <orderId>", "Capture PayPal order and mark lead PAID")
