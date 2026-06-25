@@ -4,6 +4,7 @@ import {
   hasWassistOutboundTemplates,
 } from "./config.js";
 import { normalizePhone } from "./supabase.js";
+import { optionalEnv, requireEnv } from "./env.js";
 
 const WASSIST_API_BASE = "https://backend.wassist.app/api/v1";
 const WASSIST_OUTBOUND_BASE = "https://backend.wassist.app/chats/outbound";
@@ -107,7 +108,8 @@ async function sendConversationMessage(
   message: string,
 ): Promise<void> {
   await wassistApiRequest("POST", `/conversations/${conversationId}/messages/`, {
-    message,
+    type: "text",
+    text: { body: message },
   });
 }
 
