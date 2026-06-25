@@ -33,8 +33,15 @@ export function writeSiteToPublic(name: string, html: string): string {
 }
 
 export function sitePublicUrl(slug: string): string {
-  const base = optionalEnv("WEBHOOK_BASE_URL") ?? "http://localhost:3000";
-  return `${base.replace(/\/$/, "")}/sites/${slug}/`;
+  const base =
+    optionalEnv("WEBHOOK_BASE_URL")?.replace(
+      /-[a-z0-9]+-alij-s-projects\.vercel\.app$/,
+      ".vercel.app",
+    ) ?? "https://website-found.vercel.app";
+  const stable = base.includes("website-found")
+    ? "https://website-found.vercel.app"
+    : base.replace(/\/$/, "");
+  return `${stable}/sites/${slug}/`;
 }
 
 export function redeployMainProject(): void {
