@@ -63,12 +63,20 @@ export async function processPayday(
   });
 
   const paymentMessage = `Great! Claim your site here: ${checkoutUrl}`;
-  await replyViaCallback(reply_callback, paymentMessage);
+
+  try {
+    await replyViaCallback(reply_callback, paymentMessage);
+  } catch (err) {
+    console.warn(
+      "reply_callback failed (webhook response will still deliver link):",
+      err instanceof Error ? err.message : err,
+    );
+  }
 
   console.log(`PayPal order ${orderId} sent to ${phone_number}`);
 
   return {
-    content: "Perfect — sending your payment link now!",
+    content: paymentMessage,
     processed: true,
   };
 }

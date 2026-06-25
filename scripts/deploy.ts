@@ -33,10 +33,17 @@ async function main(): Promise<void> {
   console.log(`Deployed: ${url}`);
 
   let envContent = readFileSync(ENV_FILE, "utf8");
+  const stable =
+    url.includes("website-found") && !url.endsWith("website-found.vercel.app")
+      ? "https://website-found.vercel.app"
+      : url.replace(/-[a-z0-9]+-alij-s-projects\.vercel\.app$/, ".vercel.app");
   if (/^WEBHOOK_BASE_URL=.*$/m.test(envContent)) {
-    envContent = envContent.replace(/^WEBHOOK_BASE_URL=.*$/m, `WEBHOOK_BASE_URL=${url}`);
+    envContent = envContent.replace(
+      /^WEBHOOK_BASE_URL=.*$/m,
+      `WEBHOOK_BASE_URL=${stable}`,
+    );
   } else {
-    envContent += `\nWEBHOOK_BASE_URL=${url}\n`;
+    envContent += `\nWEBHOOK_BASE_URL=${stable}\n`;
   }
   writeFileSync(ENV_FILE, envContent);
   console.log(`Updated WEBHOOK_BASE_URL in .env`);

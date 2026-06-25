@@ -113,6 +113,17 @@ async function sendConversationMessage(
   });
 }
 
+export async function sendSessionMessage(
+  to: string,
+  message: string,
+): Promise<void> {
+  if (!optionalEnv("WASSIST_AGENT_ID")) {
+    throw new Error("WASSIST_AGENT_ID is not set");
+  }
+  const conversationId = await findOrCreateConversation(to);
+  await sendConversationMessage(conversationId, message);
+}
+
 export async function sendOutreachMessage(
   to: string,
   name: string,
