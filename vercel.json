@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "",
+  "installCommand": "npm install",
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/wassist", "destination": "/api/wassist" }
+  ]
+}

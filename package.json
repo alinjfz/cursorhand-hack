@@ -1,0 +1,25 @@
+{
+  "name": "cursorhand-hack",
+  "version": "1.0.0",
+  "description": "Hands Off Web Agency — hunt leads, generate sites, WhatsApp outreach, PayPal checkout",
+  "type": "module",
+  "scripts": {
+    "hunt": "tsx src/cli.ts hunt",
+    "build": "tsx src/cli.ts build",
+    "approach": "tsx src/cli.ts approach",
+    "pipeline": "tsx src/cli.ts pipeline",
+    "payday": "tsx src/cli.ts payday",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@vercel/node": "^5.1.8",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

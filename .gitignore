@@ -1,1 +1,7 @@
 mydocs/
+node_modules/
+dist/
+.env
+.vercel/
+*.log
+.DS_Store
