@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { optionalEnv } from "./env.js";
+import { getLlmProvider, requireLlmProvider } from "./config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPT_PATH = resolve(__dirname, "../../prompts/site-generation.md");
@@ -30,6 +31,42 @@ function stripMarkdownFences(html: string): string {
   const fenceMatch = trimmed.match(/^```(?:html)?\s*([\s\S]*?)```$/);
   if (fenceMatch) return fenceMatch[1].trim();
   return trimmed;
+}
+
+async function generateWithOpenRouter(prompt: string): Promise<string> {
+  const apiKey = optionalEnv("OPENROUTER_API_KEY");
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+
+  const model =
+    optionalEnv("OPENROUTER_MODEL") ?? "anthropic/claude-sonnet-4";
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer":
+        optionalEnv("WEBHOOK_BASE_URL") ?? "https://github.com/cursorhand-hack",
+      "X-Title": "Hands Off Web Agency",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 8192,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`OpenRouter API error ${response.status}: ${body}`);
+  }
+
+  const json = (await response.json()) as {
+    choices: Array<{ message: { content: string } }>;
+  };
+  const text = json.choices[0]?.message?.content;
+  if (!text) throw new Error("OpenRouter returned no text content");
+  return stripMarkdownFences(text);
 }
 
 async function generateWithAnthropic(prompt: string): Promise<string> {
@@ -93,24 +130,31 @@ async function generateWithOpenAI(prompt: string): Promise<string> {
   return stripMarkdownFences(text);
 }
 
+async function generateWithProvider(
+  provider: ReturnType<typeof requireLlmProvider>,
+  prompt: string,
+): Promise<string> {
+  switch (provider) {
+    case "openrouter":
+      return generateWithOpenRouter(prompt);
+    case "anthropic":
+      return generateWithAnthropic(prompt);
+    case "openai":
+      return generateWithOpenAI(prompt);
+  }
+}
+
 export async function generateSiteHtml(
   input: SiteGenerationInput,
   onChunk?: (chunk: string) => void,
 ): Promise<string> {
+  const provider = requireLlmProvider();
   const prompt = fillPrompt(input);
-  onChunk?.(`Generating site for ${input.name}...\n`);
+  onChunk?.(`Generating site for ${input.name} via ${provider}...\n`);
 
-  const useAnthropic = Boolean(optionalEnv("ANTHROPIC_API_KEY"));
-  const useOpenAI = Boolean(optionalEnv("OPENAI_API_KEY"));
-
-  if (!useAnthropic && !useOpenAI) {
-    throw new Error("Set ANTHROPIC_API_KEY or OPENAI_API_KEY");
-  }
-
-  const html = useAnthropic
-    ? await generateWithAnthropic(prompt)
-    : await generateWithOpenAI(prompt);
-
+  const html = await generateWithProvider(provider, prompt);
   onChunk?.(`Generated ${html.length} bytes of HTML\n`);
   return html;
 }
+
+export { getLlmProvider };

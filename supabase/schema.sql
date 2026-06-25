@@ -42,3 +42,25 @@ insert into leads (name, full_address, phone, niche, status) values
   ('Camden Corner Cafe', '12 Camden High St, London NW1 0JH', '+447700900001', 'cafe', 'NEW'),
   ('Shoreditch Plumbing Co', '45 Brick Lane, London E1 6PU', '+447700900002', 'plumber', 'NEW')
 on conflict (phone) do nothing;
+
+-- Public read for landing page dashboard (publishable/anon key)
+alter table leads enable row level security;
+
+create policy "Public read leads"
+  on leads for select
+  using (true);
+
+create policy "Service role full access"
+  on leads for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
+
+-- Hackathon fallback: allow publishable/anon key for CLI writes
+create policy "Anon insert leads"
+  on leads for insert
+  with check (true);
+
+create policy "Anon update leads"
+  on leads for update
+  using (true)
+  with check (true);

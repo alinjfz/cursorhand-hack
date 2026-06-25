@@ -1,5 +1,10 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { requireEnv } from "./env.js";
+import {
+  getSupabaseAnonKey,
+  getSupabaseServiceKey,
+  getSupabaseUrl,
+  requireEnv,
+} from "./env.js";
 
 export type LeadStatus =
   | "NEW"
@@ -28,16 +33,39 @@ export interface Lead {
   updated_at: string;
 }
 
-let client: SupabaseClient | null = null;
+let writeClient: SupabaseClient | null = null;
+let readClient: SupabaseClient | null = null;
 
+function resolveWriteKey(): string {
+  const service = getSupabaseServiceKey();
+  if (service) return service;
+  const anon = getSupabaseAnonKey();
+  if (anon) return anon;
+  throw new Error(
+    "Set SUPABASE_SERVICE_ROLE_KEY (pipeline writes) or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+  );
+}
+
+function resolveReadKey(): string {
+  return getSupabaseServiceKey() ?? getSupabaseAnonKey() ?? resolveWriteKey();
+}
+
+/** CLI pipeline — prefers service role, falls back to publishable key. */
 export function getSupabase(): SupabaseClient {
-  if (!client) {
-    client = createClient(
-      requireEnv("SUPABASE_URL"),
-      requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    );
+  if (!writeClient) {
+    const url = getSupabaseUrl() ?? requireEnv("SUPABASE_URL");
+    writeClient = createClient(url, resolveWriteKey());
   }
-  return client;
+  return writeClient;
+}
+
+/** Dashboard / public reads — anon or service role. */
+export function getSupabaseRead(): SupabaseClient {
+  if (!readClient) {
+    const url = getSupabaseUrl() ?? requireEnv("SUPABASE_URL");
+    readClient = createClient(url, resolveReadKey());
+  }
+  return readClient;
 }
 
 export async function upsertLead(
@@ -144,4 +172,46 @@ export async function updateLead(
 
 export function normalizePhone(phone: string): string {
   return phone.replace(/[\s\-()]/g, "");
+}
+
+export interface LeadStats {
+  total: number;
+  new: number;
+  building: number;
+  siteReady: number;
+  contacted: number;
+  interested: number;
+  invoiced: number;
+  paid: number;
+  failed: number;
+}
+
+export async function getAllLeads(limit = 50): Promise<Lead[]> {
+  const supabase = getSupabaseRead();
+  const { data, error } = await supabase
+    .from("leads")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Supabase query failed: ${error.message}`);
+  return (data ?? []) as Lead[];
+}
+
+export async function getLeadStats(): Promise<LeadStats> {
+  const leads = await getAllLeads(500);
+  const count = (status: LeadStatus) =>
+    leads.filter((l) => l.status === status).length;
+
+  return {
+    total: leads.length,
+    new: count("NEW"),
+    building: count("BUILDING"),
+    siteReady: count("SITE_READY"),
+    contacted: count("CONTACTED"),
+    interested: count("INTERESTED"),
+    invoiced: count("INVOICED"),
+    paid: count("PAID"),
+    failed: count("FAILED"),
+  };
 }

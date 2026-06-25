@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hands Off — Autonomous Web Agency</title>
+  <meta name="description" content="Hunt leads, build sites, send outreach, collect payment — fully autonomous." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a href="/" class="logo">Hands<span>Off</span></a>
+    <nav>
+      <a href="#agents">Agents</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#dashboard">Live</a>
+    </nav>
+    <a href="#dashboard" class="btn btn-ghost">View dashboard</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-badge">Cursor Hands Off London</div>
+      <h1>Your web agency,<br /><em>on autopilot.</em></h1>
+      <p class="hero-lead">
+        Four AI agents hunt London businesses without websites, build bespoke sites,
+        reach out on WhatsApp, and close with PayPal — while you watch the pipeline run.
+      </p>
+      <div class="hero-actions">
+        <a href="#dashboard" class="btn btn-primary">See live activity</a>
+        <code class="hero-cmd">npm run pipeline -- --source csv</code>
+      </div>
+      <div class="hero-stats" id="hero-stats">
+        <div class="hero-stat"><span id="stat-total">—</span><label>Leads</label></div>
+        <div class="hero-stat"><span id="stat-built">—</span><label>Sites built</label></div>
+        <div class="hero-stat"><span id="stat-contacted">—</span><label>Outreach sent</label></div>
+        <div class="hero-stat"><span id="stat-paid">—</span><label>Paid</label></div>
+      </div>
+    </section>
+
+    <section id="agents" class="agents">
+      <div class="section-label">The crew</div>
+      <h2>Four agents.<br />One payday.</h2>
+      <div class="agent-grid">
+        <article class="agent-card" data-agent="hunter">
+          <div class="agent-icon">01</div>
+          <h3>Hunter</h3>
+          <p class="agent-cmd">npm run hunt</p>
+          <p>Scans CSV imports or OpenStreetMap for London businesses with a phone number and no website. Deduplicates and loads leads into Supabase.</p>
+          <ul class="agent-tags"><li>CSV</li><li>Overpass</li><li>Supabase</li></ul>
+        </article>
+        <article class="agent-card" data-agent="builder">
+          <div class="agent-icon">02</div>
+          <h3>Builder</h3>
+          <p class="agent-cmd">npm run build</p>
+          <p>Generates a polished single-page site via Manus or OpenRouter, then deploys to Vercel. Marks leads SITE_READY with a live URL.</p>
+          <ul class="agent-tags"><li>Manus</li><li>OpenRouter</li><li>Vercel</li></ul>
+        </article>
+        <article class="agent-card" data-agent="outreach">
+          <div class="agent-icon">03</div>
+          <h3>Outreach</h3>
+          <p class="agent-cmd">npm run approach</p>
+          <p>Sends WhatsApp messages through Wassist — approved templates or agent session messages — with the site preview link.</p>
+          <ul class="agent-tags"><li>Wassist</li><li>WhatsApp</li><li>Templates</li></ul>
+        </article>
+        <article class="agent-card" data-agent="payday">
+          <div class="agent-icon">04</div>
+          <h3>Payday</h3>
+          <p class="agent-cmd">/api/wassist</p>
+          <p>Listens for YES replies on WhatsApp, creates a PayPal sandbox checkout, and sends the payment link. Marks leads PAID on capture.</p>
+          <ul class="agent-tags"><li>BYOA webhook</li><li>PayPal</li><li>Auto-reply</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="pipeline" class="pipeline">
+      <div class="section-label">State machine</div>
+      <h2>Lead lifecycle</h2>
+      <div class="pipeline-track">
+        <div class="pipeline-step" data-status="NEW"><span>NEW</span><small>Hunted</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" data-status="BUILDING"><span>BUILDING</span><small>Generating</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" data-status="SITE_READY"><span>SITE_READY</span><small>Deployed</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" data-status="CONTACTED"><span>CONTACTED</span><small>WhatsApp</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" data-status="INVOICED"><span>INVOICED</span><small>PayPal</small></div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" data-status="PAID"><span>PAID</span><small>Done</small></div>
+      </div>
+    </section>
+
+    <section id="dashboard" class="dashboard">
+      <div class="dashboard-header">
+        <div>
+          <div class="section-label">Live feed</div>
+          <h2>What the agents did</h2>
+        </div>
+        <div class="dashboard-meta">
+          <span class="live-dot" id="live-indicator"></span>
+          <span id="last-updated">Loading…</span>
+        </div>
+      </div>
+
+      <div id="setup-banner" class="setup-banner hidden">
+        <strong>Dashboard not connected</strong>
+        <p id="setup-message">Add Supabase keys to see live lead activity.</p>
+        <ol>
+          <li>Run <code>supabase/schema.sql</code> in your Supabase SQL editor</li>
+          <li>Set <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_ROLE_KEY</code> in Vercel env</li>
+          <li>Redeploy with <code>vercel --prod</code></li>
+        </ol>
+      </div>
+
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><span id="dash-total">0</span><label>Total leads</label></div>
+        <div class="stat-card"><span id="dash-built">0</span><label>Sites built</label></div>
+        <div class="stat-card"><span id="dash-outreach">0</span><label>Outreach sent</label></div>
+        <div class="stat-card accent"><span id="dash-paid">0</span><label>Paid</label></div>
+      </div>
+
+      <div class="leads-table-wrap">
+        <table class="leads-table" id="leads-table">
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Status</th>
+              <th>Pipeline</th>
+              <th>Site</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body">
+            <tr class="loading-row"><td colspan="5">Fetching leads…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Hands Off Web Agency — built for Cursor Hands Off London hackathon</p>
+    <p><code>npm run pipeline</code> · <code>vercel --prod</code> · Reply YES on WhatsApp</p>
+  </footer>
+
+  <script src="/dashboard.js"></script>
+</body>
+</html>

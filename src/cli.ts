@@ -6,6 +6,8 @@ import { runBuild } from "./pipeline/build.js";
 import { runApproach } from "./pipeline/approach.js";
 import { getLeadsByStatus, updateLead } from "./lib/supabase.js";
 import { captureOrder } from "./lib/paypal.js";
+import { describeConfiguredProviders, getBuildProvider, getLlmProvider, getWassistMode, hasWassistOutboundTemplates } from "./lib/config.js";
+import { hasSupabaseReadAccess, hasSupabaseWriteAccess } from "./lib/env.js";
 
 const program = new Command();
 
@@ -15,16 +17,34 @@ program
   .version("1.0.0");
 
 program
+  .command("status")
+  .description("Show which providers are configured from .env")
+  .action(() => {
+    console.log(describeConfiguredProviders());
+    console.log("");
+    console.log("Build provider:", getBuildProvider());
+    console.log("LLM provider:", getLlmProvider() ?? "none");
+    console.log("Supabase write:", hasSupabaseWriteAccess() ? "yes" : "no");
+    console.log("Supabase read:", hasSupabaseReadAccess() ? "yes" : "no");
+    console.log("Wassist mode:", getWassistMode());
+    console.log("Wassist outbound templates:", hasWassistOutboundTemplates() ? "yes" : "no");
+  });
+
+program
   .command("hunt")
-  .description("Scrape London leads with no website via Outscraper")
-  .option("-q, --query <query>", "Outscraper search query")
+  .description("Find London leads with no website (Overpass API or CSV)")
+  .option("-q, --query <query>", "Search query for Overpass")
   .option("-l, --limit <number>", "Max results", "20")
-  .option("--seed", "Use pre-seeded leads instead of Outscraper")
+  .option("-s, --source <source>", "overpass | csv", "overpass")
+  .option("--csv <path>", "CSV path when --source csv", "mydocs/leads.csv")
+  .option("--seed", "Use pre-seeded Supabase leads only")
   .action(async (opts) => {
     await runHunt({
       query: opts.query,
       limit: parseInt(opts.limit, 10),
       seed: opts.seed,
+      source: opts.source as "overpass" | "csv",
+      csv: opts.csv,
     });
   });
 
@@ -32,11 +52,17 @@ program
   .command("build")
   .description("Generate and deploy sites for NEW leads")
   .option("-l, --limit <number>", "Max leads to build", "1")
-  .option("--skip-deploy", "Generate HTML only, skip Vercel deploy")
+  .option("--skip-deploy", "Generate HTML only, skip deploy")
+  .option(
+    "-p, --provider <provider>",
+    "manus | llm-vercel | auto (default: auto)",
+    "auto",
+  )
   .action(async (opts) => {
     await runBuild({
       limit: parseInt(opts.limit, 10),
       skipDeploy: opts.skipDeploy,
+      provider: opts.provider as "manus" | "llm-vercel" | "auto",
     });
   });
 
@@ -51,18 +77,24 @@ program
 program
   .command("pipeline")
   .description("Run hunt → build → approach (semi-auto demo)")
-  .option("-q, --query <query>", "Outscraper search query")
+  .option("-q, --query <query>", "Search query for Overpass hunt")
   .option("--seed", "Skip hunt, use pre-seeded leads")
+  .option("-s, --source <source>", "overpass | csv", "csv")
+  .option("--csv <path>", "CSV path when --source csv", "mydocs/leads.csv")
   .option("-b, --build-limit <number>", "Sites to build", "1")
   .option("-a, --approach-limit <number>", "Leads to contact", "1")
   .action(async (opts) => {
-    console.log("═══ Hands Off Pipeline ═══\n");
+    console.log("═══ Hands Off Pipeline ═══");
+    console.log(describeConfiguredProviders());
+    console.log("");
 
     console.log("▶ Phase 1: Hunt");
     await runHunt({
       query: opts.query,
       limit: 20,
       seed: opts.seed,
+      source: opts.source as "overpass" | "csv",
+      csv: opts.csv,
     });
 
     console.log("\n▶ Phase 2: Build");

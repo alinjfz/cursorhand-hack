@@ -1,20 +1,25 @@
-import {
-  searchPlaces,
-  filterNoWebsite,
-  toHuntResult,
-} from "../lib/outscraper.js";
+import { searchPlacesOverpass, loadPlacesFromCsv } from "../lib/places.js";
 import { upsertLead, getLeadsByStatus } from "../lib/supabase.js";
 
 export interface HuntOptions {
   query?: string;
   limit?: number;
   seed?: boolean;
+  source?: "overpass" | "csv";
+  csv?: string;
 }
 
 const DEFAULT_QUERY = "cafes in Shoreditch, London, UK";
+const DEFAULT_CSV = "mydocs/leads.csv";
 
 export async function runHunt(options: HuntOptions = {}): Promise<void> {
-  const { query = DEFAULT_QUERY, limit = 20, seed = false } = options;
+  const {
+    query = DEFAULT_QUERY,
+    limit = 20,
+    seed = false,
+    source = "overpass",
+    csv = DEFAULT_CSV,
+  } = options;
 
   if (seed) {
     const existing = await getLeadsByStatus("NEW", 10);
@@ -28,30 +33,33 @@ export async function runHunt(options: HuntOptions = {}): Promise<void> {
     return;
   }
 
-  console.log(`Hunting: "${query}" (limit ${limit})`);
-  const places = await searchPlaces(query, limit);
-  console.log(`Outscraper returned ${places.length} places`);
+  let places;
+  if (source === "csv") {
+    console.log(`Hunting from CSV: ${csv}`);
+    places = loadPlacesFromCsv(csv);
+    console.log(`CSV returned ${places.length} leads (no website + phone)`);
+  } else {
+    console.log(`Hunting via OpenStreetMap: "${query}" (limit ${limit})`);
+    places = await searchPlacesOverpass(query, limit);
+    console.log(`Overpass returned ${places.length} places with phone, no website`);
+  }
 
-  const noWebsite = filterNoWebsite(places);
-  console.log(`${noWebsite.length} places with no website + phone`);
-
-  if (noWebsite.length === 0) {
-    console.log("No leads found. Try a different query or use --seed.");
+  if (places.length === 0) {
+    console.log("No leads found. Try --source csv or use --seed.");
     return;
   }
 
   let upserted = 0;
-  for (const place of noWebsite) {
-    const result = toHuntResult(place);
+  for (const place of places) {
     await upsertLead({
-      name: result.name,
-      phone: result.phone,
-      full_address: result.full_address,
-      niche: result.niche,
-      google_place_id: result.google_place_id,
+      name: place.name,
+      phone: place.phone,
+      full_address: place.full_address,
+      niche: place.niche,
+      google_place_id: place.google_place_id,
       status: "NEW",
     });
-    console.log(`  ✓ ${result.name} — ${result.phone}`);
+    console.log(`  ✓ ${place.name} — ${place.phone}`);
     upserted++;
   }
 
