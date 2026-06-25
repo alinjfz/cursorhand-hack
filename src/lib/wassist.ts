@@ -81,7 +81,7 @@ async function findOrCreateConversation(phone: string): Promise<string> {
 
   const list = await wassistApiRequest<{
     results?: Array<{ id: string; contact?: { phoneNumber?: string } }>;
-  }>("GET", `/conversations/?agent=${agentId}`);
+  }>("GET", `/conversations/?agentId=${agentId}`);
 
   const existing = list.results?.find(
     (c) => c.contact?.phoneNumber === phone,
@@ -91,7 +91,7 @@ async function findOrCreateConversation(phone: string): Promise<string> {
   const created = await wassistApiRequest<{ id: string }>(
     "POST",
     "/conversations/",
-    { agent: agentId, phoneNumber: phone },
+    { agentId, toNumber: phone },
   );
   return created.id;
 }
