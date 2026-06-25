@@ -17,7 +17,7 @@ async function main(): Promise<void> {
     }>;
   };
   for (const c of data.results ?? []) {
-    console.log(c.contact?.name ?? "?", c.contact?.phoneNumber ?? "?");
+    console.log(c.id, c.contact?.name ?? "?", c.contact?.phoneNumber ?? "?");
   }
 }
 

@@ -32,6 +32,9 @@ export async function runApproach(options: ApproachOptions = {}): Promise<void> 
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`Approach failed for ${lead.name}: ${message}`);
+      if (message.includes("no WhatsApp phone number")) {
+        console.error("  → Run: npm run wassist:link");
+      }
       await updateLead(lead.id, { status: "FAILED", error_message: message });
     }
   }

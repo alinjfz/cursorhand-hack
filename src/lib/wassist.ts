@@ -3,7 +3,7 @@ import {
   getWassistOutboundSecret,
   hasWassistOutboundTemplates,
 } from "./config.js";
-import { optionalEnv, requireEnv } from "./env.js";
+import { normalizePhone } from "./supabase.js";
 
 const WASSIST_API_BASE = "https://backend.wassist.app/api/v1";
 const WASSIST_OUTBOUND_BASE = "https://backend.wassist.app/chats/outbound";
@@ -71,6 +71,12 @@ export async function sendOutboundTemplate(
   }
 }
 
+function phonesMatch(a: string, b: string): boolean {
+  const na = normalizePhone(a);
+  const nb = normalizePhone(b);
+  return na === nb || na.endsWith(nb) || nb.endsWith(na);
+}
+
 async function findOrCreateConversation(phone: string): Promise<string> {
   const agentId = optionalEnv("WASSIST_AGENT_ID");
   if (!agentId) {
@@ -83,8 +89,8 @@ async function findOrCreateConversation(phone: string): Promise<string> {
     results?: Array<{ id: string; contact?: { phoneNumber?: string } }>;
   }>("GET", `/conversations/?agentId=${agentId}`);
 
-  const existing = list.results?.find(
-    (c) => c.contact?.phoneNumber === phone,
+  const existing = list.results?.find((c) =>
+    c.contact?.phoneNumber ? phonesMatch(c.contact.phoneNumber, phone) : false,
   );
   if (existing) return existing.id;
 
